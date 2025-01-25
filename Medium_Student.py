@@ -231,14 +231,14 @@ def test_process_all_lines_values( source_IP_address , ip_to_list_of_ports  ):
     return val
 #------------------------------------------------------------------------------
 def  count_unique_ids_compute( lines ):
-    unique = list()
-    duplicates = list()
+    unique = set()
+    duplicates = set()
     for words in lines:
         uid = words[2].strip()
         if uid in unique:
-            duplicates.insert(0, uid )
+            duplicates.add(uid) #add for sets not insert
         else:
-            unique.insert( 0 , uid)
+            unique.add(uid)
 
     return len(unique), len(duplicates)
 #------------------------------------------------------------------------------
