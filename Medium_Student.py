@@ -174,40 +174,40 @@ def read_file_as_list_of_strings_DO_NOT_PROFILE(  filename :str )-> list[ list[ 
 def find_unique_sourceIP_addresses(lines):
     assert lines is not None
     assert len(lines) > 1
-    source_IP_address = [ ]
-    ip_to_list_of_ports = [ ]
+    unique_destination_ips = [ ]
+    destination_ips_to_org_ports = [ ]
 
     for words in lines:
-        id_resp_h = words[6].strip()
-        id_orig_p = words[4].strip()
+        destination_IP = words[6].strip()        #extracts the destination IP
+        originating_port = words[4].strip()        #originating port
         # print(  id_resp_h,id_orig_p  )
-        if id_resp_h in source_IP_address:
-            index = -101
+        if destination_IP in unique_destination_ips:      #is destination IP already in ip ports list?, find index
+            index = -101                        # -101 is arbitrary None could be used, i think
             try:
-                index =  source_IP_address.index( id_resp_h )
+                index =  unique_destination_ips.index( destination_IP )   #find the index postition of destination IP  in source list
             except ValueError:
                 assert False ,"Should never happen - we checked already "
             except:
                 assert  False, "What else could go wrong ? "
             assert index != -101
 
-            list = ip_to_list_of_ports[index  ]
-
-            if id_orig_p not in list:
-                list.append(id_orig_p)  # append for list
-                ip_to_list_of_ports[ index  ] = list
+            ports_mapped_to_destination_ip_list = destination_ips_to_org_ports[index  ]
+            # if not add append to list
+            if originating_port not in ports_mapped_to_destination_ip_list:
+                ports_mapped_to_destination_ip_list.append(originating_port)
+                destination_ips_to_org_ports[ index  ] = ports_mapped_to_destination_ip_list
         else: #id_resp_h NO in list_of_ports
             #print( f"Makeing 2",id_resp_h , id_orig_p  )
-            lst =  [ id_orig_p   ]
+            lst =  [ originating_port   ]
             assert len( lst )== 1
-            source_IP_address.append(  id_resp_h )
-            assert source_IP_address[ -1 ] == id_resp_h, "Not at end "
-            ip_to_list_of_ports.append( lst )
-            assert ip_to_list_of_ports[  -1 ] == lst
+            unique_destination_ips.append(  destination_IP )
+            assert unique_destination_ips[ -1 ] == destination_IP, "Not at end "
+            destination_ips_to_org_ports.append( lst )
+            assert destination_ips_to_org_ports[  -1 ] == lst
 
-    print("Final len ", len(source_IP_address))
+    print("Final len ", len(unique_destination_ips))
 
-    return   source_IP_address , ip_to_list_of_ports
+    return   unique_destination_ips , destination_ips_to_org_ports
 
 #------------------------------------------------------------------------------
 def save_process_all_lines_values_DO_NOT_PROFILE( name,  source_IP_address , ip_to_list_of_ports  ):
