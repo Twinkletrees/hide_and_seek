@@ -24,7 +24,7 @@ list_of_ports = dict()
 
 # STUDENTS THIS IS HOW YOU CONTROL IF YOU USE THE REAL DATA SET OF THE EXPERIMENT ONE.
 
-filename =  smallname   # change this to largeName  when you feel you have it working
+filename =  largeName   # change this to largeName  when you feel you have it working
 
 def count_stddev_for_orig_pkts(lines):
     """
@@ -174,48 +174,31 @@ def read_file_as_list_of_strings_DO_NOT_PROFILE(  filename :str )-> list[ list[ 
 def find_unique_sourceIP_addresses(lines):
     assert lines is not None
     assert len(lines) > 1
-    unique_destination_ips = [ ]
-    destination_ips_to_org_ports = [ ]
+    unique_destination_ips_to_ports = {}
 
     for words in lines:
         destination_IP = words[6].strip()        #extracts the destination IP
         originating_port = words[4].strip()        #originating port
         # print(  id_resp_h,id_orig_p  )
-        if destination_IP in unique_destination_ips:      #is destination IP already in ip ports list?, find index
-            index = -101                        # -101 is arbitrary None could be used, i think
-            try:
-                index =  unique_destination_ips.index( destination_IP )   #find the index postition of destination IP  in source list
-            except ValueError:
-                assert False ,"Should never happen - we checked already "
-            except:
-                assert  False, "What else could go wrong ? "
-            assert index != -101
+        if destination_IP not in unique_destination_ips_to_ports:
+            # If IP is new, initialize a set for its ports
+            unique_destination_ips_to_ports[destination_IP] = set() #adding to a set is O(1)
+        try:
+            unique_destination_ips_to_ports[destination_IP].add(originating_port)
+        except KeyError:
+            print(f"KeyError for destination_IP: {destination_IP}, row: {words}")
+            raise
 
-            ports_mapped_to_destination_ip_list = destination_ips_to_org_ports[index  ]
-            # if not add append to list
-            if originating_port not in ports_mapped_to_destination_ip_list:
-                ports_mapped_to_destination_ip_list.append(originating_port)
-                destination_ips_to_org_ports[ index  ] = ports_mapped_to_destination_ip_list
-        else: #id_resp_h NO in list_of_ports
-            #print( f"Makeing 2",id_resp_h , id_orig_p  )
-            lst =  [ originating_port   ]
-            assert len( lst )== 1
-            unique_destination_ips.append(  destination_IP )
-            assert unique_destination_ips[ -1 ] == destination_IP, "Not at end "
-            destination_ips_to_org_ports.append( lst )
-            assert destination_ips_to_org_ports[  -1 ] == lst
+    print("Final len ", len(unique_destination_ips_to_ports))
 
-    print("Final len ", len(unique_destination_ips))
-
-    return   unique_destination_ips , destination_ips_to_org_ports
+    return   unique_destination_ips_to_ports
 
 #------------------------------------------------------------------------------
-def save_process_all_lines_values_DO_NOT_PROFILE( name,  source_IP_address , ip_to_list_of_ports  ):
+def save_process_all_lines_values_DO_NOT_PROFILE( name,  unique_destination_ips_to_ports  ):
     with open( name , 'w') as file:
-        for line in  range( len( source_IP_address)  ) :
-            file.write(  source_IP_address[ line]  + '->' )
-            for port in ip_to_list_of_ports[ line ]:
-                file.write(port + ',')
+        for ip, ports in unique_destination_ips_to_ports.items():
+            file.write(ip + ' -> ')
+            file.write(','.join(ports))  # Join the ports with commas
             file.write('\n')
 #------------------------------------------------------------------------------
 def test_process_all_lines_values( source_IP_address , ip_to_list_of_ports  ):
@@ -249,7 +232,11 @@ def count_unique_ids( lines ):
     assert unique  > 0 , "should be impossible"
     return unique,duplicates
 #------------------------------------------------------------------------------
-def check_correct_output_DO_NOT_PROFILE( filename ,  source_IP_address , ip_to_list_of_ports  ):
+def check_correct_output_DO_NOT_PROFILE( filename ,  unique_destination_ips_to_ports  ):
+    # Flatten the dictionary into lists of IP addresses and ports for testing
+    source_IP_address = list(unique_destination_ips_to_ports.keys())
+    ip_to_list_of_ports = [list(ports) for ports in unique_destination_ips_to_ports.values()]
+
     sum = test_process_all_lines_values(source_IP_address, ip_to_list_of_ports)
     print("final sum ", sum)
 
@@ -510,9 +497,9 @@ def main( lines ):
     print("Unique ID ", unquieIDs, " lines ", len(lines))
 
     print("Compute  VERSION ")
-    source_IP_address, ip_to_list_of_ports = find_unique_sourceIP_addresses(lines)
+    unique_destination_ips_to_ports = find_unique_sourceIP_addresses(lines)
 
-    return unquieIDs, duplicates, source_IP_address , ip_to_list_of_ports
+    return unquieIDs, duplicates, unique_destination_ips_to_ports
 
 
 
@@ -522,13 +509,13 @@ if __name__ == "__main__":
 
     #  process this in profiler
     with Profile() as profile:
-        unquieIDs, duplicates, source_IP_address, ip_to_list_of_ports = main(lines)
+        unquieIDs, duplicates, unique_destination_ips_to_ports = main(lines)
     info = Stats(profile).strip_dirs().sort_stats(SortKey.CUMULATIVE)
     print("---------PROFILING RESULTS---------")
     info.print_stats()
     # don't profile this
-    save_process_all_lines_values_DO_NOT_PROFILE( filename + "Processes.csv", source_IP_address , ip_to_list_of_ports )
-    check_correct_output_DO_NOT_PROFILE( filename ,  source_IP_address , ip_to_list_of_ports  )
+    save_process_all_lines_values_DO_NOT_PROFILE( filename + "Processes.csv", unique_destination_ips_to_ports )
+    check_correct_output_DO_NOT_PROFILE( filename ,  unique_destination_ips_to_ports  )
     check_correct_unique_DO_NOT_PROFILE( filename ,  unquieIDs, duplicates )
 
 
